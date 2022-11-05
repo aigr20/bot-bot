@@ -68,8 +68,11 @@ var (
 		"dota":  cmds.DotaCmd,
 	}
 
-	token   []byte
-	guildID = flag.String("guild", "", "Guild ID for testing. If empty register commands globally")
+	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){}
+
+	token              []byte
+	guildID            = flag.String("guild", "", "Guild ID for testing. If empty register commands globally")
+	deregisterCommands = flag.Bool("clear", false, "Set to true to remove commands on shutdown.")
 )
 
 func init() {
@@ -91,8 +94,16 @@ func main() {
 		log.Printf("Logged in as: %s#%s", s.State.User.Username, s.State.User.Discriminator)
 	})
 	bot.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if handler, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-			handler(s, i)
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			if handler, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+				handler(s, i)
+			}
+
+		case discordgo.InteractionMessageComponent:
+			if handler, ok := componentHandlers[i.MessageComponentData().CustomID]; ok {
+				handler(s, i)
+			}
 		}
 	})
 
@@ -116,6 +127,17 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-stop
+
+	if *deregisterCommands {
+		log.Println("Removing commands...")
+		for _, v := range registeredCommands {
+			log.Printf("Deregistering %s\n", v.Name)
+			err := bot.ApplicationCommandDelete(bot.State.User.ID, *guildID, v.ID)
+			if err != nil {
+				log.Fatalf("failed to delete %s command: %s\n", v.Name, err.Error())
+			}
+		}
+	}
 
 	log.Println("Shutting down gracefully...")
 }
