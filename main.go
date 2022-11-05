@@ -1,7 +1,7 @@
 package main
 
 import (
-	cmds "aigr20/botbot/commands"
+	cmds "aigr20/botbot/lib/commands"
 	"flag"
 	"fmt"
 	"io/ioutil"

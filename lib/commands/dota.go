@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"aigr20/botbot/util"
+	"aigr20/botbot/lib/util"
 
 	"github.com/bwmarrin/discordgo"
 )

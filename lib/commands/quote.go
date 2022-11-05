@@ -2,7 +2,7 @@ package commands
 
 import (
 	"aigr20/botbot/lib/quotes"
-	"aigr20/botbot/util"
+	"aigr20/botbot/lib/util"
 	"fmt"
 	"log"
 
