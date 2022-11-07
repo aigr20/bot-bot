@@ -73,6 +73,7 @@ var (
 	token              []byte
 	guildID            = flag.String("guild", "", "Guild ID for testing. If empty register commands globally")
 	deregisterCommands = flag.Bool("clear", false, "Set to true to remove commands on shutdown.")
+	completeDereg      = flag.Bool("clear-full", false, "Remove all commands from all servers")
 )
 
 func init() {
@@ -97,12 +98,12 @@ func main() {
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
 			if handler, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-				handler(s, i)
+				go handler(s, i)
 			}
 
 		case discordgo.InteractionMessageComponent:
 			if handler, ok := componentHandlers[i.MessageComponentData().CustomID]; ok {
-				handler(s, i)
+				go handler(s, i)
 			}
 		}
 	})
@@ -113,6 +114,26 @@ func main() {
 	}
 
 	defer bot.Close()
+
+	if *completeDereg {
+		log.Println("Clearing commands")
+		for _, guild := range bot.State.Guilds {
+			fmt.Println(guild.Name)
+			commands, err := bot.ApplicationCommands(bot.State.User.ID, guild.ID)
+			if err != nil {
+				log.Printf("Failed to get commands for %s (%s): %s\n", guild.Name, guild.ID, err.Error())
+				continue
+			}
+			for _, command := range commands {
+				fmt.Println(command.Name)
+				err = bot.ApplicationCommandDelete(bot.State.User.ID, guild.ID, command.ID)
+				if err != nil {
+					log.Printf("Failed to delete '%s' command in %s (%s): %s", command.Name, guild.Name, guild.ID, err.Error())
+				}
+			}
+		}
+		log.Println("All commands have been cleared")
+	}
 
 	log.Println("Adding commands...")
 	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
