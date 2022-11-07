@@ -41,3 +41,9 @@ func ReplyEmbed(s *discordgo.Session, i *discordgo.Interaction, embed *discordgo
 		},
 	})
 }
+
+func Acknowledge(s *discordgo.Session, i *discordgo.Interaction) {
+	s.InteractionRespond(i, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+	})
+}

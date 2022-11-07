@@ -15,6 +15,13 @@ type Quote struct {
 	Quote  string
 }
 
+type ListOffsetTracker struct {
+	Server string
+	Offset int
+}
+
+var QuoteListOffsets = map[string]*ListOffsetTracker{}
+
 func (q *Quote) String() string {
 	return fmt.Sprintf("\"%s\",\"%s\"", q.Quote, q.Author)
 }
@@ -121,4 +128,24 @@ func GetQuote(index int, server string) (Quote, error) {
 		return Quote{}, err
 	}
 	return quote, nil
+}
+
+func ListQuotes(user string) ([]Quote, error) {
+	offset := QuoteListOffsets[user]
+	file, err := getFile(offset.Server)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	quotes, err := parseQuotes(file)
+	quoteList := make([]Quote, 0)
+	for i := offset.Offset; i < offset.Offset+10 && i+1 <= len(quotes); i++ {
+		quoteList = append(quoteList, quotes[i])
+	}
+	if len(quoteList) == 10 {
+		offset.Offset += 10
+	}
+
+	return quoteList, nil
 }

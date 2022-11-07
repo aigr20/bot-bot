@@ -68,7 +68,9 @@ var (
 		"dota":  cmds.DotaCmd,
 	}
 
-	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){}
+	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"next-page": cmds.QuoteCmd,
+	}
 
 	token              []byte
 	guildID            = flag.String("guild", "", "Guild ID for testing. If empty register commands globally")
@@ -149,7 +151,7 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-stop
 
-	if *deregisterCommands {
+	if *deregisterCommands || *completeDereg {
 		log.Println("Removing commands...")
 		for _, v := range registeredCommands {
 			log.Printf("Deregistering %s\n", v.Name)
