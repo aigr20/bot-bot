@@ -50,16 +50,16 @@ optionLoop:
 }
 
 func processComponent(s *discordgo.Session, i *discordgo.Interaction) {
+	var offsetMod int
 	switch i.MessageComponentData().CustomID {
 	case "next-page":
-		quotes, _ := quotes.ListQuotes(i.User.ID)
-		messageString := ""
-		for _, quote := range quotes {
-			messageString += quote.Quote + "\n"
-		}
-		s.ChannelMessageEdit(i.ChannelID, i.Message.ID, messageString)
-		util.Acknowledge(s, i)
+		offsetMod = 10
+	case "prev-page":
+		offsetMod = -10
 	}
+
+	updateList(s, i, offsetMod)
+	util.Acknowledge(s, i)
 }
 
 func addQuote(s *discordgo.Session, i *discordgo.Interaction, content string, options util.OptionArray) string {
@@ -99,16 +99,17 @@ func getQuote(s *discordgo.Session, i *discordgo.Interaction, index int) string 
 }
 
 func listQuotes(s *discordgo.Session, i *discordgo.Interaction) string {
-	quotes.QuoteListOffsets[i.Member.User.ID] = &quotes.ListOffsetTracker{
+	quotes.ListTrackerMap[i.Member.User.ID] = &quotes.ListTracker{
 		Server: i.GuildID,
 		Offset: 0,
 	}
-	quotes, _ := quotes.ListQuotes(i.Member.User.ID)
+	quoteList, _ := quotes.ListQuotes(i.Member.User.ID, 10)
 	messageString := ""
-	for _, n := range quotes {
+	for _, n := range quoteList {
 		messageString += n.Quote + "\n"
 	}
 
+	offset := quotes.ListTrackerMap[i.Member.User.ID]
 	channel, err := s.UserChannelCreate(i.Member.User.ID)
 	if err != nil {
 		log.Printf("Error creating user channel for id (%s): %s\n", i.Member.User.ID, err.Error())
@@ -120,8 +121,14 @@ func listQuotes(s *discordgo.Session, i *discordgo.Interaction) string {
 			discordgo.ActionsRow{
 				Components: []discordgo.MessageComponent{
 					discordgo.Button{
+						Label:    "Prev. page",
+						CustomID: "prev-page",
+						Disabled: true,
+					},
+					discordgo.Button{
 						Label:    "Next page",
 						CustomID: "next-page",
+						Disabled: offset.Offset >= offset.TotalQuotes,
 					},
 				},
 			},
@@ -131,6 +138,36 @@ func listQuotes(s *discordgo.Session, i *discordgo.Interaction) string {
 		log.Printf("Error sending message to user with id (%s): %s\n", i.Member.User.ID, err.Error())
 		util.Reply(s, i, "encountered an error when attempting to DM you")
 	}
-	util.Acknowledge(s, i)
-	return ""
+
+	return "Sent list in DMs"
+}
+
+func updateList(s *discordgo.Session, i *discordgo.Interaction, offsetMod int) {
+	offset := quotes.ListTrackerMap[i.User.ID]
+	quotes, _ := quotes.ListQuotes(i.User.ID, offsetMod)
+	messageString := ""
+	for _, quote := range quotes {
+		messageString += quote.Quote + "\n"
+	}
+	s.ChannelMessageEditComplex(&discordgo.MessageEdit{
+		Channel: i.ChannelID,
+		ID:      i.Message.ID,
+		Content: &messageString,
+		Components: []discordgo.MessageComponent{
+			discordgo.ActionsRow{
+				Components: []discordgo.MessageComponent{
+					discordgo.Button{
+						Label:    "Prev. page",
+						CustomID: "prev-page",
+						Disabled: offset.Offset-10 == 0,
+					},
+					discordgo.Button{
+						Label:    "Next page",
+						CustomID: "next-page",
+						Disabled: offset.Offset >= offset.TotalQuotes,
+					},
+				},
+			},
+		},
+	})
 }

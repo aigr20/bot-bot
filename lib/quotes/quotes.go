@@ -15,12 +15,13 @@ type Quote struct {
 	Quote  string
 }
 
-type ListOffsetTracker struct {
-	Server string
-	Offset int
+type ListTracker struct {
+	Server      string
+	Offset      int
+	TotalQuotes int
 }
 
-var QuoteListOffsets = map[string]*ListOffsetTracker{}
+var ListTrackerMap = map[string]*ListTracker{}
 
 func (q *Quote) String() string {
 	return fmt.Sprintf("\"%s\",\"%s\"", q.Quote, q.Author)
@@ -130,8 +131,8 @@ func GetQuote(index int, server string) (Quote, error) {
 	return quote, nil
 }
 
-func ListQuotes(user string) ([]Quote, error) {
-	offset := QuoteListOffsets[user]
+func ListQuotes(user string, mod int) ([]Quote, error) {
+	offset := ListTrackerMap[user]
 	file, err := getFile(offset.Server)
 	if err != nil {
 		return nil, err
@@ -139,12 +140,25 @@ func ListQuotes(user string) ([]Quote, error) {
 	defer file.Close()
 
 	quotes, err := parseQuotes(file)
-	quoteList := make([]Quote, 0)
-	for i := offset.Offset; i < offset.Offset+10 && i+1 <= len(quotes); i++ {
-		quoteList = append(quoteList, quotes[i])
+	if err != nil {
+		return nil, err
 	}
-	if len(quoteList) == 10 {
-		offset.Offset += 10
+
+	offset.TotalQuotes = len(quotes)
+	var quoteList []Quote
+	if mod > 0 {
+		start := offset.Offset
+		end := offset.Offset + mod
+		if len(quotes) < mod {
+			end = len(quotes)
+		}
+		quoteList = quotes[start:end]
+		offset.Offset += len(quoteList)
+	} else {
+		start := offset.Offset + (mod * 2)
+		end := offset.Offset + mod
+		quoteList = quotes[start:end]
+		offset.Offset -= len(quoteList)
 	}
 
 	return quoteList, nil

@@ -70,6 +70,7 @@ var (
 
 	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"next-page": cmds.QuoteCmd,
+		"prev-page": cmds.QuoteCmd,
 	}
 
 	token              []byte
