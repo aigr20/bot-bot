@@ -9,6 +9,37 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+var QuoteCommandSpecification = &discordgo.ApplicationCommand{
+	Name:        "quote",
+	Description: "Quote command",
+	Options: []*discordgo.ApplicationCommandOption{
+		{
+			Type:        discordgo.ApplicationCommandOptionString,
+			Name:        "add",
+			Description: "The quote to add",
+			Required:    false,
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionUser,
+			Name:        "author",
+			Description: "The author of the quote",
+			Required:    false,
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionInteger,
+			Name:        "get",
+			Description: "Get quote at index",
+			Required:    false,
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionBoolean,
+			Name:        "list",
+			Description: "Send a list of all quotes in your DMs",
+			Required:    false,
+		},
+	},
+}
+
 func QuoteCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	switch i.Type {
 	case discordgo.InteractionApplicationCommand:

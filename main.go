@@ -4,7 +4,6 @@ import (
 	cmds "aigr20/botbot/lib/commands"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -15,55 +14,13 @@ import (
 
 var (
 	commands = []*discordgo.ApplicationCommand{
-		{
-			Name:        "ping",
-			Description: "Ping command",
-		},
-		{
-			Name:        "quote",
-			Description: "Quote command",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "add",
-					Description: "The quote to add",
-					Required:    false,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionUser,
-					Name:        "author",
-					Description: "The author of the quote",
-					Required:    false,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionInteger,
-					Name:        "get",
-					Description: "Get quote at index",
-					Required:    false,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionBoolean,
-					Name:        "list",
-					Description: "Send a list of all quotes in your DMs",
-					Required:    false,
-				},
-			},
-		},
-		{
-			Name:        "dota",
-			Description: "Dota command",
-		},
+		cmds.PingCommandSpecification,
+		cmds.QuoteCommandSpecification,
+		cmds.DotaCommandSpecification,
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"ping": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "Pong!",
-				},
-			})
-		},
+		"ping":  cmds.PingCmd,
 		"quote": cmds.QuoteCmd,
 		"dota":  cmds.DotaCmd,
 	}
@@ -81,7 +38,7 @@ var (
 
 func init() {
 	var err error
-	token, err = ioutil.ReadFile("token")
+	token, err = os.ReadFile("token")
 	if err != nil {
 		log.Fatalf("failed to open token file: %s\n", err.Error())
 	}
