@@ -37,6 +37,12 @@ var QuoteCommandSpecification = &discordgo.ApplicationCommand{
 			Description: "Send a list of all quotes in your DMs",
 			Required:    false,
 		},
+		{
+			Type:        discordgo.ApplicationCommandOptionInteger,
+			Name:        "delete",
+			Description: "Delete the quote at index",
+			Required:    false,
+		},
 	},
 }
 
@@ -68,6 +74,9 @@ optionLoop:
 		case "get":
 			output = getQuote(s, i, int(option.IntValue()))
 			ok = true
+			break optionLoop
+		case "delete":
+			output = deleteQuote(s, i, int(option.IntValue()))
 			break optionLoop
 		case "author":
 			break optionLoop
@@ -201,4 +210,8 @@ func updateList(s *discordgo.Session, i *discordgo.Interaction, offsetMod int) {
 			},
 		},
 	})
+}
+
+func deleteQuote(s *discordgo.Session, i *discordgo.Interaction, index int) string {
+	return "Not yet implemented"
 }
