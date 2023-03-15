@@ -213,5 +213,9 @@ func updateList(s *discordgo.Session, i *discordgo.Interaction, offsetMod int) {
 }
 
 func deleteQuote(s *discordgo.Session, i *discordgo.Interaction, index int) string {
+	err := quotes.DeleteQuote(index, i.GuildID)
+	if err != nil {
+		return err.Error()
+	}
 	return "Not yet implemented"
 }

@@ -163,3 +163,21 @@ func ListQuotes(user string, mod int) ([]Quote, error) {
 
 	return quoteList, nil
 }
+
+func DeleteQuote(index int, server string) error {
+	file, err := getFile(server)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	quotes, err := parseQuotes(file)
+	if err != nil {
+		return err
+	}
+	if len(quotes) < index {
+		return fmt.Errorf("there is no quote at index %d, the server only has %d quotes", index, len(quotes))
+	}
+
+	return nil
+}
