@@ -90,6 +90,16 @@ func getSpecificQuote(file *os.File, index int) (Quote, error) {
 	return Quote{Quote: record[0], Author: record[1]}, nil
 }
 
+func saveQuotes(file *os.File, quotes *[]Quote) error {
+	var lines string
+	for _, quote := range *quotes {
+		lines += quote.String() + "\n"
+	}
+
+	_, err := file.WriteAt([]byte(lines), 0)
+	return err
+}
+
 func AddQuote(content string, author *discordgo.User, server string) (int, error) {
 	file, err := getFile(server)
 	if err != nil {
@@ -103,12 +113,7 @@ func AddQuote(content string, author *discordgo.User, server string) (int, error
 	}
 	quotes = append(quotes, Quote{Quote: content, Author: author.ID})
 
-	var lines string
-	for _, quote := range quotes {
-		lines += quote.String() + "\n"
-	}
-
-	_, err = file.WriteAt([]byte(lines), 0)
+	err = saveQuotes(file, &quotes)
 	if err != nil {
 		log.Printf("Error writing to %s: %s\n", file.Name(), err.Error())
 		return -1, errors.New("encountered an error when saving the quote to file")
@@ -175,8 +180,25 @@ func DeleteQuote(index int, server string) error {
 	if err != nil {
 		return err
 	}
-	if len(quotes) < index {
-		return fmt.Errorf("there is no quote at index %d, the server only has %d quotes", index, len(quotes))
+	if len(quotes) <= index {
+		return fmt.Errorf("there is no quote at index %d, the server only has %d quotes", index+1, len(quotes))
+	}
+
+	quotes = append(quotes[:index], quotes[index+1:]...)
+	err = file.Truncate(0)
+	if err != nil {
+		log.Println("Failed to truncate quotes file")
+		return errors.New("there was a problem saving the quotes")
+	}
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		log.Println("Failed to seek quotes file")
+		return errors.New("there was a problem saving the quotes")
+	}
+	err = saveQuotes(file, &quotes)
+	if err != nil {
+		log.Println("Failed to save quotes file")
+		return errors.New("there was a problem saving the quotes")
 	}
 
 	return nil

@@ -213,9 +213,13 @@ func updateList(s *discordgo.Session, i *discordgo.Interaction, offsetMod int) {
 }
 
 func deleteQuote(s *discordgo.Session, i *discordgo.Interaction, index int) string {
-	err := quotes.DeleteQuote(index, i.GuildID)
+	if index < 1 {
+		return "The index must be larger than 0."
+	}
+
+	err := quotes.DeleteQuote(index-1, i.GuildID)
 	if err != nil {
 		return err.Error()
 	}
-	return "Not yet implemented"
+	return fmt.Sprintf("Quote at index %v has been deleted.", index)
 }
