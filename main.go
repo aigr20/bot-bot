@@ -17,12 +17,14 @@ var (
 		cmds.PingCommandSpecification,
 		cmds.QuoteCommandSpecification,
 		cmds.DotaCommandSpecification,
+		cmds.NickCommandSpecification,
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"ping":  cmds.PingCmd,
 		"quote": cmds.QuoteCmd,
 		"dota":  cmds.DotaCmd,
+		"nick":  cmds.NickCmd,
 	}
 
 	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -37,6 +39,7 @@ var (
 )
 
 func init() {
+	log.Printf("Launching with discordgo version %v", discordgo.VERSION)
 	var err error
 	token, err = os.ReadFile("token")
 	if err != nil {
@@ -58,11 +61,13 @@ func main() {
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
 			if handler, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+				log.Printf("[command] Handling %s\n", i.ApplicationCommandData().Name)
 				go handler(s, i)
 			}
 
 		case discordgo.InteractionMessageComponent:
 			if handler, ok := componentHandlers[i.MessageComponentData().CustomID]; ok {
+				log.Printf("[interaction] Handling %s\n", i.MessageComponentData().CustomID)
 				go handler(s, i)
 			}
 		}
