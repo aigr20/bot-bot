@@ -229,3 +229,24 @@ func EditQuote(index int, newContent string, server string) error {
 
 	return err
 }
+
+func ChangeAuthor(index int, newAuthor *discordgo.User, server string) error {
+	file, err := getFile(server)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	quotes, err := parseQuotes(file)
+	if err != nil {
+		return err
+	}
+	if len(quotes) <= index {
+		return fmt.Errorf("there is no quote at index %d, the server only has %d quotes", index+1, len(quotes))
+	}
+
+	quotes[index].Author = newAuthor.ID
+	err = saveFreshQuotes(file, &quotes)
+
+	return err
+}

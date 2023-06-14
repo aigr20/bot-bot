@@ -51,7 +51,7 @@ var QuoteCommandSpecification = &discordgo.ApplicationCommand{
 		},
 		{
 			Type:        discordgo.ApplicationCommandOptionString,
-			Name:        "new",
+			Name:        "content",
 			Description: "New quote content",
 			Required:    false,
 		},
@@ -92,15 +92,14 @@ optionLoop:
 			ok = true
 			break optionLoop
 		case "edit":
-			newContent, err := util.GetStringOption("new", options)
-			if err != nil {
-				output = "You must provide the 'new' option when editing a quote."
+			newContent, errContent := util.GetStringOption("content", options)
+			newAuthor, errAuthor := util.GetUserOption(s, "author", options)
+			if errContent != nil && errAuthor != nil {
+				output = "You must provide at least one of the 'content' or 'author' options when editing a quote."
 				break optionLoop
 			}
-			output = editQuote(s, i, int(option.IntValue()), newContent)
+			output = editQuote(i, int(option.IntValue()), newContent, newAuthor)
 			ok = true
-			break optionLoop
-		case "author":
 			break optionLoop
 		}
 	}
@@ -246,14 +245,22 @@ func deleteQuote(s *discordgo.Session, i *discordgo.Interaction, index int) stri
 	return fmt.Sprintf("Quote at index %v has been deleted.", index)
 }
 
-func editQuote(s *discordgo.Session, i *discordgo.Interaction, index int, newContent string) string {
+func editQuote(i *discordgo.Interaction, index int, newContent string, newAuthor *discordgo.User) string {
 	if index < 1 {
 		return "The index must be larger than 0."
 	}
 
-	err := quotes.EditQuote(index-1, newContent, i.GuildID)
-	if err != nil {
-		return err.Error()
+	if newContent != "" {
+		err := quotes.EditQuote(index-1, newContent, i.GuildID)
+		if err != nil {
+			return err.Error()
+		}
+	}
+	if newAuthor != nil {
+		err := quotes.ChangeAuthor(index-1, newAuthor, i.GuildID)
+		if err != nil {
+			return err.Error()
+		}
 	}
 	return fmt.Sprintf("Quote at index %v has been updated.", index)
 }
