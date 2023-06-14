@@ -100,6 +100,25 @@ func saveQuotes(file *os.File, quotes *[]Quote) error {
 	return err
 }
 
+func saveFreshQuotes(file *os.File, quotes *[]Quote) error {
+	err := file.Truncate(0)
+	if err != nil {
+		log.Println("Failed to truncate quotes file")
+		return errors.New("there was a problem saving the quotes")
+	}
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		log.Println("Failed to seek quotes file")
+		return errors.New("there was a problem saving the quotes")
+	}
+	err = saveQuotes(file, quotes)
+	if err != nil {
+		log.Println("Failed to save quotes file")
+		return errors.New("there was a problem saving the quotes")
+	}
+	return nil
+}
+
 func AddQuote(content string, author *discordgo.User, server string) (int, error) {
 	file, err := getFile(server)
 	if err != nil {
@@ -185,21 +204,28 @@ func DeleteQuote(index int, server string) error {
 	}
 
 	quotes = append(quotes[:index], quotes[index+1:]...)
-	err = file.Truncate(0)
+	err = saveFreshQuotes(file, &quotes)
+
+	return err
+}
+
+func EditQuote(index int, newContent string, server string) error {
+	file, err := getFile(server)
 	if err != nil {
-		log.Println("Failed to truncate quotes file")
-		return errors.New("there was a problem saving the quotes")
+		return err
 	}
-	_, err = file.Seek(0, 0)
+	defer file.Close()
+
+	quotes, err := parseQuotes(file)
 	if err != nil {
-		log.Println("Failed to seek quotes file")
-		return errors.New("there was a problem saving the quotes")
+		return err
 	}
-	err = saveQuotes(file, &quotes)
-	if err != nil {
-		log.Println("Failed to save quotes file")
-		return errors.New("there was a problem saving the quotes")
+	if len(quotes) <= index {
+		return fmt.Errorf("there is no quote at index %d, the server only has %d quotes", index+1, len(quotes))
 	}
 
-	return nil
+	quotes[index].Quote = newContent
+	err = saveFreshQuotes(file, &quotes)
+
+	return err
 }

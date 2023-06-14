@@ -43,6 +43,18 @@ var QuoteCommandSpecification = &discordgo.ApplicationCommand{
 			Description: "Delete the quote at index",
 			Required:    false,
 		},
+		{
+			Type:        discordgo.ApplicationCommandOptionInteger,
+			Name:        "edit",
+			Description: "Index of quote to edit",
+			Required:    false,
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionString,
+			Name:        "new",
+			Description: "New quote content",
+			Required:    false,
+		},
 	},
 }
 
@@ -77,6 +89,16 @@ optionLoop:
 			break optionLoop
 		case "delete":
 			output = deleteQuote(s, i, int(option.IntValue()))
+			ok = true
+			break optionLoop
+		case "edit":
+			newContent, err := util.GetStringOption("new", options)
+			if err != nil {
+				output = "You must provide the 'new' option when editing a quote."
+				break optionLoop
+			}
+			output = editQuote(s, i, int(option.IntValue()), newContent)
+			ok = true
 			break optionLoop
 		case "author":
 			break optionLoop
@@ -222,4 +244,16 @@ func deleteQuote(s *discordgo.Session, i *discordgo.Interaction, index int) stri
 		return err.Error()
 	}
 	return fmt.Sprintf("Quote at index %v has been deleted.", index)
+}
+
+func editQuote(s *discordgo.Session, i *discordgo.Interaction, index int, newContent string) string {
+	if index < 1 {
+		return "The index must be larger than 0."
+	}
+
+	err := quotes.EditQuote(index-1, newContent, i.GuildID)
+	if err != nil {
+		return err.Error()
+	}
+	return fmt.Sprintf("Quote at index %v has been updated.", index)
 }
