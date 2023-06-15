@@ -12,19 +12,34 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var (
-	commands = []*discordgo.ApplicationCommand{
-		cmds.PingCommandSpecification,
-		cmds.QuoteCommandSpecification,
-		cmds.DotaCommandSpecification,
-		cmds.NickCommandSpecification,
-	}
+type Command struct {
+	Name          string
+	Handler       func(s *discordgo.Session, i *discordgo.InteractionCreate)
+	Specification *discordgo.ApplicationCommand
+}
 
-	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"ping":  cmds.PingCmd,
-		"quote": cmds.QuoteCmd,
-		"dota":  cmds.DotaCmd,
-		"nick":  cmds.NickCmd,
+var (
+	commands = []*Command{
+		{
+			Name:          "ping",
+			Specification: cmds.PingCommandSpecification,
+			Handler:       cmds.PingCmd,
+		},
+		{
+			Name:          "quote",
+			Specification: cmds.QuoteCommandSpecification,
+			Handler:       cmds.QuoteCmd,
+		},
+		{
+			Name:          "dota",
+			Specification: cmds.DotaCommandSpecification,
+			Handler:       cmds.DotaCmd,
+		},
+		{
+			Name:          "nick",
+			Specification: cmds.NickCommandSpecification,
+			Handler:       cmds.NickCmd,
+		},
 	}
 
 	componentHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -60,9 +75,16 @@ func main() {
 	bot.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
-			if handler, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+			var command *Command
+			for _, cmd := range commands {
+				if cmd.Name == i.ApplicationCommandData().Name {
+					command = cmd
+					break
+				}
+			}
+			if command != nil {
 				log.Printf("[command] Handling %s\n", i.ApplicationCommandData().Name)
-				go handler(s, i)
+				go command.Handler(s, i)
 			}
 
 		case discordgo.InteractionMessageComponent:
@@ -103,7 +125,7 @@ func main() {
 	log.Println("Adding commands...")
 	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
 	for i, v := range commands {
-		cmd, err := bot.ApplicationCommandCreate(bot.State.User.ID, *guildID, v)
+		cmd, err := bot.ApplicationCommandCreate(bot.State.User.ID, *guildID, v.Specification)
 		if err != nil {
 			log.Panicf("Cannot create '%s' command: %s", v.Name, err.Error())
 		}
