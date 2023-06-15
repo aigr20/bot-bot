@@ -7,7 +7,6 @@ import (
 )
 
 var PingCommandSpecification = &discordgo.ApplicationCommand{
-
 	Name:        "ping",
 	Description: "Ping command",
 }
