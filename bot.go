@@ -92,8 +92,10 @@ func (bot *Bot) Run(guildID string) {
 	bot.ID = bot.Instance.State.User.ID
 
 	log.Println("Opened bot connection")
-	log.Println("Adding commands...")
+}
 
+func (bot *Bot) RegisterCommands(guildID string) {
+	log.Println("Adding commands...")
 	for i, command := range bot.Commands {
 		cmd, err := bot.Instance.ApplicationCommandCreate(bot.ID, guildID, command.Specification)
 		if err != nil {
