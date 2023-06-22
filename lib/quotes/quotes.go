@@ -49,7 +49,7 @@ func (q *Quote) Embed(s *discordgo.Session) *discordgo.MessageEmbed {
 }
 
 func getFile(server string) (*os.File, error) {
-	filename := fmt.Sprintf("quotes_%s.csv", server)
+	filename := fmt.Sprintf("data/quotes_%s.csv", server)
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0660)
 	if err != nil {
 		log.Printf("Error opening %s: %s\n", filename, err.Error())
