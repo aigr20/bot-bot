@@ -20,8 +20,8 @@ var NickCommandSpecification = &discordgo.ApplicationCommand{
 		{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "nickname",
-			Description: "New nickname, a blank nickname will remove the nickname",
-			Required:    false,
+			Description: "New nickname",
+			Required:    true,
 		},
 	},
 }
@@ -50,8 +50,6 @@ func NickCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 	if oldNick == "" && nickname != "" {
 		util.Replyf(s, i.Interaction, "Set the nickname of %s to %s.", user.Username, nickname)
-	} else if nickname == "" {
-		util.Replyf(s, i.Interaction, "Cleared the nickname of %s.", user.Username)
 	} else {
 		util.Replyf(s, i.Interaction, "Changed the nickname of %s from %s to %s.", user.Username, oldNick, nickname)
 	}
