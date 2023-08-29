@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"aigr20/botbot/lib/opendota"
 	"aigr20/botbot/lib/util"
 	"encoding/csv"
 	"errors"
+	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -24,6 +27,18 @@ var DotaCommandSpecification = &discordgo.ApplicationCommand{
 			Type:        discordgo.ApplicationCommandOptionString,
 			Name:        "connect",
 			Description: "The steam account id to connect to your discord account",
+			Required:    false,
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionUser,
+			Name:        "stats",
+			Description: "The user who's stats you want to look up",
+			Required:    false,
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionString,
+			Name:        "hero",
+			Description: "Hero name or abbreviation",
 			Required:    false,
 		},
 	},
@@ -66,6 +81,28 @@ optionLoop:
 			output = "Steam account connected to discord account"
 			ok = true
 			break optionLoop
+		case "stats":
+			discordAccount := option.UserValue(s).ID
+			steamAccount, err := getAccountByDiscordId(discordAccount)
+			if err != nil && err != errAccountNotFound {
+				output = "internal error"
+				ok = true
+				break optionLoop
+			} else if err != nil && err == errAccountNotFound {
+				output = err.Error()
+				ok = true
+				break optionLoop
+			}
+			output = strconv.Itoa(steamAccount)
+			ok = true
+			hero, err := util.GetStringOption("hero", options)
+			if err != nil {
+				output = "Please provide a hero name"
+				ok = true
+				break optionLoop
+			}
+			getTotals(steamAccount, hero)
+			break optionLoop
 		}
 	}
 
@@ -77,6 +114,7 @@ optionLoop:
 }
 
 var errRegistrationFailed = errors.New("failed to register account")
+var errAccountNotFound = errors.New("no account found")
 
 func registerAccount(discordAccount string, steamAccount int) error {
 	file, err := os.OpenFile("steamconnections.csv", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
@@ -95,4 +133,34 @@ func registerAccount(discordAccount string, steamAccount int) error {
 	}
 
 	return nil
+}
+
+func getAccountByDiscordId(discordId string) (int, error) {
+	file, err := os.Open("steamconnections.csv")
+	if err != nil {
+		return 0, errAccountNotFound
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.ReuseRecord = true
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if record[0] == discordId {
+			return strconv.Atoi(record[1])
+		}
+	}
+	return 0, errAccountNotFound
+}
+
+func getTotals(account int, hero string) {
+	totals, err := opendota.GetTotals(account)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	fmt.Println(totals)
 }
