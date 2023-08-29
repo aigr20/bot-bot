@@ -61,13 +61,13 @@ var QuoteCommandSpecification = &discordgo.ApplicationCommand{
 func QuoteCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	switch i.Type {
 	case discordgo.InteractionApplicationCommand:
-		processCommand(s, i.Interaction)
+		processQuoteCommand(s, i.Interaction)
 	case discordgo.InteractionMessageComponent:
-		processComponent(s, i.Interaction)
+		processQuoteComponent(s, i.Interaction)
 	}
 }
 
-func processCommand(s *discordgo.Session, i *discordgo.Interaction) {
+func processQuoteCommand(s *discordgo.Session, i *discordgo.Interaction) {
 	options := i.ApplicationCommandData().Options
 	var output string
 	ok := false
@@ -110,7 +110,7 @@ optionLoop:
 	}
 }
 
-func processComponent(s *discordgo.Session, i *discordgo.Interaction) {
+func processQuoteComponent(s *discordgo.Session, i *discordgo.Interaction) {
 	var offsetMod int
 	switch i.MessageComponentData().CustomID {
 	case "next-page":
