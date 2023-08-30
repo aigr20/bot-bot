@@ -3,3 +3,4 @@ test.sh
 botbot
 *.csv
 data
+cmd/herolinker/herolinker
