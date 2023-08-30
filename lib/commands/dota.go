@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"os"
-
 	"strconv"
 
 	"github.com/bwmarrin/discordgo"
@@ -54,7 +53,7 @@ func DotaCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func processDotaCommand(s *discordgo.Session, i *discordgo.Interaction) {
 	options := i.ApplicationCommandData().Options
 	var output string
-	ok := false
+	var embed *discordgo.MessageEmbed
 
 optionLoop:
 	for _, option := range options {
@@ -63,7 +62,6 @@ optionLoop:
 			accountId, err := strconv.Atoi(option.StringValue())
 			if err != nil {
 				output = "Steam ID must be numeric"
-				ok = true
 				break optionLoop
 			}
 
@@ -74,42 +72,37 @@ optionLoop:
 			err = registerAccount(i.Member.User.ID, accountId)
 			if err != nil {
 				output = err.Error()
-				ok = true
 				break optionLoop
 			}
 
 			output = "Steam account connected to discord account"
-			ok = true
 			break optionLoop
 		case "stats":
 			discordAccount := option.UserValue(s).ID
 			steamAccount, err := getAccountByDiscordId(discordAccount)
 			if err != nil && err != errAccountNotFound {
 				output = "internal error"
-				ok = true
 				break optionLoop
 			} else if err != nil && err == errAccountNotFound {
 				output = err.Error()
-				ok = true
 				break optionLoop
 			}
-			output = strconv.Itoa(steamAccount)
-			ok = true
+
 			hero, err := util.GetStringOption("hero", options)
 			if err != nil {
 				output = "Please provide a hero name"
-				ok = true
 				break optionLoop
 			}
-			getTotals(steamAccount, hero)
+			embed = getTotals(steamAccount, hero)
 			break optionLoop
+		default:
+			output = "No primary action provided"
 		}
 	}
-
-	if output != "" && ok {
+	if embed != nil {
+		util.ReplyEmbed(s, i, embed)
+	} else {
 		util.Reply(s, i, output)
-	} else if !ok {
-		util.Reply(s, i, "No recognized option provided")
 	}
 }
 
@@ -156,11 +149,45 @@ func getAccountByDiscordId(discordId string) (int, error) {
 	return 0, errAccountNotFound
 }
 
-func getTotals(account int, hero string) {
-	totals, err := opendota.GetTotals(account)
+func getTotals(account int, heroAlias string) *discordgo.MessageEmbed {
+	hero, err := opendota.GetHeroFromAlias(heroAlias)
+	if err != nil {
+		return nil
+	}
+
+	totals, err := opendota.GetTotals(account, hero.Id)
 	if err != nil {
 		log.Println(err)
-		return
+		return nil
 	}
 	fmt.Println(totals)
+	embed := &discordgo.MessageEmbed{Title: fmt.Sprintf("Totals as %s", hero.Name), Fields: totalFields(totals)}
+	return embed
+}
+
+func addFieldAvg(fields []*discordgo.MessageEmbedField, totals []opendota.TotalField, field string, title string) []*discordgo.MessageEmbedField {
+	if f, ok := opendota.GetTotalField(field, totals); ok {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   title,
+			Value:  util.FloatString(f.Sum/float64(f.Matches), 2),
+			Inline: true,
+		})
+	}
+	return fields
+}
+
+var emptyField = discordgo.MessageEmbedField{Name: "-", Value: "-", Inline: true}
+
+func totalFields(totals []opendota.TotalField) []*discordgo.MessageEmbedField {
+	fields := make([]*discordgo.MessageEmbedField, 0)
+	fields = addFieldAvg(fields, totals, "kills", "Average Kills")
+	fields = addFieldAvg(fields, totals, "deaths", "Average Deaths")
+	fields = addFieldAvg(fields, totals, "assists", "Average Assists")
+	fields = addFieldAvg(fields, totals, "last_hits", "Average Last Hits")
+	fields = addFieldAvg(fields, totals, "denies", "Average Denies")
+	fields = append(fields, &emptyField)
+	fields = addFieldAvg(fields, totals, "hero_damage", "Average Hero Damage")
+	fields = addFieldAvg(fields, totals, "tower_damage", "Average Tower Damage")
+	fields = addFieldAvg(fields, totals, "hero_healing", "Average Hero Healing")
+	return fields
 }
