@@ -189,5 +189,8 @@ func totalFields(totals []opendota.TotalField) []*discordgo.MessageEmbedField {
 	fields = addFieldAvg(fields, totals, "hero_damage", "Average Hero Damage")
 	fields = addFieldAvg(fields, totals, "tower_damage", "Average Tower Damage")
 	fields = addFieldAvg(fields, totals, "hero_healing", "Average Hero Healing")
+	fields = addFieldAvg(fields, totals, "purchase_ward_observer", "Average Observer Wards Bought")
+	fields = addFieldAvg(fields, totals, "purchase_ward_sentry", "Average Sentry Wards Bought")
+	fields = addFieldAvg(fields, totals, "stuns", "Average Stun Time Inflicted")
 	return fields
 }
