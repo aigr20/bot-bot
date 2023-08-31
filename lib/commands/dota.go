@@ -77,6 +77,7 @@ optionLoop:
 
 			output = "Steam account connected to discord account"
 			break optionLoop
+
 		case "stats":
 			discordAccount := option.UserValue(s).ID
 			steamAccount, err := getAccountByDiscordId(discordAccount)
@@ -94,7 +95,11 @@ optionLoop:
 				break optionLoop
 			}
 			embed = getTotals(steamAccount, hero)
+			if embed == nil {
+				output = "Failed to retrieve data from opendota"
+			}
 			break optionLoop
+
 		default:
 			output = "No primary action provided"
 		}
@@ -183,10 +188,13 @@ func addFieldAvg(fields []*discordgo.MessageEmbedField, totals []opendota.TotalF
 var emptyField = discordgo.MessageEmbedField{Name: "-", Value: "-", Inline: true}
 
 func winrateFields(winrate opendota.WinRateResponse) []*discordgo.MessageEmbedField {
+	matches := winrate.Wins + winrate.Losses
+	winPercent := float64(winrate.Wins) / float64(matches)
+
 	fields := make([]*discordgo.MessageEmbedField, 0)
 	fields = append(fields, &discordgo.MessageEmbedField{
 		Name:   "Matches Played As",
-		Value:  strconv.Itoa(winrate.Wins + winrate.Losses),
+		Value:  strconv.Itoa(matches),
 		Inline: true,
 	})
 	fields = append(fields, &discordgo.MessageEmbedField{
@@ -196,7 +204,7 @@ func winrateFields(winrate opendota.WinRateResponse) []*discordgo.MessageEmbedFi
 	})
 	fields = append(fields, &discordgo.MessageEmbedField{
 		Name:   "Winrate As",
-		Value:  fmt.Sprintf("%v%%", util.FloatString((float64(winrate.Wins)/float64(winrate.Wins+winrate.Losses))*100, 1)),
+		Value:  fmt.Sprintf("%v%%", util.FloatString(winPercent*100, 1)),
 		Inline: true,
 	})
 	return fields
