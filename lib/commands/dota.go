@@ -155,13 +155,17 @@ func getTotals(account int, heroAlias string) *discordgo.MessageEmbed {
 		return nil
 	}
 
+	winrate, err := opendota.GetWinrateAs(account, hero.Id)
+	if err != nil {
+		return nil
+	}
 	totals, err := opendota.GetTotals(account, hero.Id)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
-	fmt.Println(totals)
-	embed := &discordgo.MessageEmbed{Title: fmt.Sprintf("Totals as %s", hero.Name), Fields: totalFields(totals)}
+
+	embed := &discordgo.MessageEmbed{Title: fmt.Sprintf("Totals as %s", hero.Name), Fields: append(winrateFields(winrate), totalFields(totals)...)}
 	return embed
 }
 
@@ -177,6 +181,26 @@ func addFieldAvg(fields []*discordgo.MessageEmbedField, totals []opendota.TotalF
 }
 
 var emptyField = discordgo.MessageEmbedField{Name: "-", Value: "-", Inline: true}
+
+func winrateFields(winrate opendota.WinRateResponse) []*discordgo.MessageEmbedField {
+	fields := make([]*discordgo.MessageEmbedField, 0)
+	fields = append(fields, &discordgo.MessageEmbedField{
+		Name:   "Matches Played As",
+		Value:  strconv.Itoa(winrate.Wins + winrate.Losses),
+		Inline: true,
+	})
+	fields = append(fields, &discordgo.MessageEmbedField{
+		Name:   "Wins As",
+		Value:  strconv.Itoa(winrate.Wins),
+		Inline: true,
+	})
+	fields = append(fields, &discordgo.MessageEmbedField{
+		Name:   "Winrate As",
+		Value:  fmt.Sprintf("%v%%", util.FloatString((float64(winrate.Wins)/float64(winrate.Wins+winrate.Losses))*100, 1)),
+		Inline: true,
+	})
+	return fields
+}
 
 func totalFields(totals []opendota.TotalField) []*discordgo.MessageEmbedField {
 	fields := make([]*discordgo.MessageEmbedField, 0)

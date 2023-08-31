@@ -55,3 +55,22 @@ func GetTotals(accountId int, heroId int) (TotalResponse, error) {
 
 	return result, nil
 }
+
+func GetWinrateAs(accountId int, heroId int) (WinRateResponse, error) {
+	response, err := http.Get(fmt.Sprintf("%s/players/%v/wl?hero_id=%v", api_base, accountId, heroId))
+	if err != nil {
+		log.Println(err)
+		return WinRateResponse{}, err
+	}
+	defer response.Body.Close()
+	decoder := json.NewDecoder(response.Body)
+
+	var result WinRateResponse
+	err = decoder.Decode(&result)
+	if err != nil {
+		log.Println(err)
+		return WinRateResponse{}, err
+	}
+
+	return result, nil
+}

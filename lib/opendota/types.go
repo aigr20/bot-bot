@@ -14,3 +14,8 @@ type TotalField struct {
 }
 
 type TotalResponse = []TotalField
+
+type WinRateResponse struct {
+	Wins   int `json:"win"`
+	Losses int `json:"lose"`
+}
