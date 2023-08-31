@@ -13,6 +13,7 @@ const api_base = "https://api.opendota.com/api"
 
 var ErrInternalError = errors.New("internal error")
 var ErrNoHero = errors.New("no hero going by that alias")
+var ErrNoMatches = errors.New("no matches played")
 
 func GetHeroFromAlias(alias string) (HeroAlias, error) {
 	file, err := os.Open("heroes.json")
@@ -73,4 +74,26 @@ func GetWinrateAs(accountId int, heroId int) (WinRateResponse, error) {
 	}
 
 	return result, nil
+}
+
+func GetLatestMatchAs(accountId int, heroId int) (Match, error) {
+	response, err := http.Get(fmt.Sprintf("%s/players/%v/matches?hero_id=%v&limit=1&sort=start_time", api_base, accountId, heroId))
+	if err != nil {
+		log.Println(err)
+		return Match{}, ErrInternalError
+	}
+	defer response.Body.Close()
+	decoder := json.NewDecoder(response.Body)
+
+	var result []Match
+	err = decoder.Decode(&result)
+	if err != nil {
+		log.Println(err)
+		return Match{}, ErrInternalError
+	}
+
+	if len(result) == 0 {
+		return Match{}, ErrNoMatches
+	}
+	return result[0], nil
 }

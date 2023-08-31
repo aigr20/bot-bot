@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -52,7 +53,7 @@ func DotaCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 func processDotaCommand(s *discordgo.Session, i *discordgo.Interaction) {
 	options := i.ApplicationCommandData().Options
-	var output string
+	output := "No arguments provided"
 	var embed *discordgo.MessageEmbed
 
 optionLoop:
@@ -79,8 +80,8 @@ optionLoop:
 			break optionLoop
 
 		case "stats":
-			discordAccount := option.UserValue(s).ID
-			steamAccount, err := getAccountByDiscordId(discordAccount)
+			discordAccount := option.UserValue(s)
+			steamAccount, err := getAccountByDiscordId(discordAccount.ID)
 			if err != nil && err != errAccountNotFound {
 				output = "internal error"
 				break optionLoop
@@ -94,7 +95,7 @@ optionLoop:
 				output = "Please provide a hero name"
 				break optionLoop
 			}
-			embed = getTotals(steamAccount, hero)
+			embed = getTotals(discordAccount.Username, steamAccount, hero)
 			if embed == nil {
 				output = "Failed to retrieve data from opendota"
 			}
@@ -154,7 +155,7 @@ func getAccountByDiscordId(discordId string) (int, error) {
 	return 0, errAccountNotFound
 }
 
-func getTotals(account int, heroAlias string) *discordgo.MessageEmbed {
+func getTotals(username string, account int, heroAlias string) *discordgo.MessageEmbed {
 	hero, err := opendota.GetHeroFromAlias(heroAlias)
 	if err != nil {
 		return nil
@@ -170,7 +171,29 @@ func getTotals(account int, heroAlias string) *discordgo.MessageEmbed {
 		return nil
 	}
 
-	embed := &discordgo.MessageEmbed{Title: fmt.Sprintf("Totals as %s", hero.Name), Fields: append(winrateFields(winrate), totalFields(totals)...)}
+	fields := append(winrateFields(winrate), totalFields(totals)...)
+	latestMatch, err := opendota.GetLatestMatchAs(account, hero.Id)
+	switch err {
+	case opendota.ErrNoMatches:
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Latest Match",
+			Value:  "No matches played",
+			Inline: true,
+		})
+	case nil:
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Latest Match",
+			Value:  time.Unix(int64(latestMatch.StartTime), 0).String(),
+			Inline: true,
+		})
+	default:
+		return nil
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:  fmt.Sprintf("Statistics for %s as %s", username, hero.Name),
+		Fields: fields,
+	}
 	return embed
 }
 
