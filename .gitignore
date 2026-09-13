@@ -1,6 +1,3 @@
-token*
-test.sh
-botbot
-*.csv
-data
-cmd/herolinker/herolinker
+target
+dependency-reduced-pom.xml
+botbot.db*
