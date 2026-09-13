@@ -1,0 +1,127 @@
+1: anti-mage, am
+2: axe
+3: bane
+4: bloodseeker, bs
+5: crystal maiden, cm
+6: drow ranger, drow
+7: earthshaker, shaker
+8: juggernaut, jugg
+9: mirana, potm
+10: morphling, morph
+11: shadow fiend, nevermore, sf
+12: phantom lancer, pl, cancer lancer
+13: puck
+14: pudge
+15: razor
+16: sand king, sk
+17: storm spirit, storm
+18: sven
+19: tiny
+20: vengeful spirit, venge
+21: windranger, windrunner
+22: zeus
+23: kunkka
+25: lina
+26: lion
+27: shadow shaman, shaman
+28: slardar
+29: tidehunter, tide
+30: witch doctor, wd
+31: lich
+32: riki, rikimaru
+33: enigma
+34: tinker
+35: sniper
+36: necrophos, necrolyte, necro
+37: warlock
+38: beastmaster
+39: queen of pain, qop
+40: venomancer, veno
+41: faceless void
+42: wraith king, skeleton king
+43: death prophet
+44: phantom assassin, pa
+45: pugna
+46: templar assassin, ta
+47: viper
+48: luna
+49: dragon knight
+50: dazzle
+51: clockwerk, rattletrap, clock
+52: leshrac
+53: furion
+54: lifestealer
+55: dark seer
+56: clinkz
+57: omniknight
+58: enchantress
+59: huskar
+60: night stalker
+61: broodmother, brood
+62: bounty hunter, bh
+63: weaver
+64: jakiro
+65: batrider
+66: chen
+67: spectre
+68: ancient apparition, aa
+69: doom
+70: ursa
+71: spirit breaker
+72: gyrocopter, gyro
+73: alchemist
+74: invoker
+75: silencer
+76: outworld destroyer, outworld devourer, od
+77: lycan
+78: brewmaster, brew
+79: shadow demon
+80: lone druid
+81: chaos knight
+82: meepo
+83: treant protector
+84: ogre magi
+85: undying
+86: rubick
+87: disruptor
+88: nyx assassin, nyx
+89: naga siren, naga
+90: keeper of the light, kotl
+91: io, wisp
+92: visage
+93: slark
+94: medusa
+95: troll warlord, troll
+96: centaur warrunner, centaur
+97: magnus, magnataur
+98: timbersaw, timber, shredder
+99: bristleback, bristle
+100: tusk
+101: skywrath mage, skywrath
+102: abaddon
+103: elder titan
+104: legion commander, legion
+105: techies
+106: ember spirit, ember
+107: earth spirit
+108: underlord, abyssal underlord
+109: terrorblade
+110: phoenix
+111: oracle
+112: winter wyvern, wyvern
+113: arc warden
+114: monkey king, wukong
+119: dark willow, willow
+120: pangolier, pango
+121: grimstroke, grim
+123: hoodwink
+126: void spirit
+128: snapfire
+129: mars
+131: ringmaster
+135: dawnbreaker
+136: marci
+137: primal beast
+138: muerta
+145: kez
+155: largo
