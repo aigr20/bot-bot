@@ -13,7 +13,6 @@ import se.aigr20.botbot.opendota.OpenDotaClient;
 import se.aigr20.botbot.opendota.OpenDotaException;
 import se.aigr20.botbot.opendota.model.Hero;
 
-import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -115,10 +114,8 @@ public class DotaCommand extends ListenerAdapter {
   }
 
   private void handleStatsCommand(final SlashCommandInteractionEvent event) {
-    final User targetOption = Objects.requireNonNull(event.getOption("user").getAsUser());
+    final User target = Objects.requireNonNull(event.getOption("user").getAsUser());
     final String heroInput = Objects.requireNonNull(event.getOption("hero").getAsString());
-
-    final Member target = event.getGuild().getMemberById(targetOption.getId());
 
     final Optional<Hero> hero;
     try {
@@ -148,7 +145,9 @@ public class DotaCommand extends ListenerAdapter {
 
     if (steamAccount.isEmpty()) {
       logger.warn("No user found: account_id={}", target.getId());
-      event.reply("%s has not connected their Steam account".formatted(target.getAsMention())).queue();
+      event
+              .reply("%s has not connected their Steam account".formatted(target.getAsMention()))
+              .queue();
       return;
     }
 
