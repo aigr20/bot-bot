@@ -74,7 +74,7 @@ public class DotaEmbedBuilder {
     embed
             .addField("Wins", String.valueOf(winrate.win()), true)
             .addField("Losses", String.valueOf(winrate.lose()), true)
-            .addField("Winrate", "%.2f%".formatted(winratePercent.doubleValue()), true);
+            .addField("Winrate", "%.2f%%".formatted(winratePercent.doubleValue()), true);
     for (final AverageField field : AVERAGE_FIELDS) {
       final TotalField f = totals.get(field.field());
       if (f != null && f.n() > 0) {
