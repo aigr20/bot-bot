@@ -1,5 +1,7 @@
 package se.aigr20.botbot.commands.dota;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,6 +17,8 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 
 public class DotaEmbedBuilder {
+  private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
+
   private static final List<AverageField> AVERAGE_FIELDS = List
           .of(new AverageField("kills", "Average Kills"),
               new AverageField("deaths", "Average Deaths"),
@@ -59,14 +63,18 @@ public class DotaEmbedBuilder {
     final EmbedBuilder embed = new EmbedBuilder()
             .setTitle("Statistics for %s as %s".formatted(username, hero.localizedName()));
 
+    final BigDecimal wins = BigDecimal.valueOf(winrate.win());
+    final BigDecimal losses = BigDecimal.valueOf(winrate.lose());
+    final BigDecimal games = wins.add(losses);
+    final BigDecimal winsShare = wins.divide(games, 5, RoundingMode.HALF_UP);
+    final BigDecimal winratePercent = winsShare
+            .multiply(ONE_HUNDRED)
+            .setScale(2, RoundingMode.HALF_UP);
+
     embed
             .addField("Wins", String.valueOf(winrate.win()), true)
             .addField("Losses", String.valueOf(winrate.lose()), true)
-            .addField("Winrate",
-                      "%.2f"
-                              .formatted((double) winrate.win() /
-                                         (double) (winrate.win() + winrate.lose())),
-                      true);
+            .addField("Winrate", "%.2f%".formatted(winratePercent.doubleValue()), true);
     for (final AverageField field : AVERAGE_FIELDS) {
       final TotalField f = totals.get(field.field());
       if (f != null && f.n() > 0) {
@@ -77,7 +85,9 @@ public class DotaEmbedBuilder {
       }
     }
 
-    final String latestValue = latestMatch.map(m -> "<t:%d:R>".formatted(m.unixStartTime())).orElse("No games played");
+    final String latestValue = latestMatch
+            .map(m -> "<t:%d:R>".formatted(m.unixStartTime()))
+            .orElse("No games played");
     embed.addField("Latest Game", latestValue, false);
 
     return embed.build();
