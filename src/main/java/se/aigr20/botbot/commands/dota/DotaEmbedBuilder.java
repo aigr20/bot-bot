@@ -78,10 +78,7 @@ public class DotaEmbedBuilder {
     for (final AverageField field : AVERAGE_FIELDS) {
       final TotalField f = totals.get(field.field());
       if (f != null && f.n() > 0) {
-        embed
-                .addField("%s (n=%d)".formatted(field.title(), f.n()),
-                          "%.2f".formatted(f.sum() / f.n()),
-                          true);
+        embed.addField("%s".formatted(field.title()), "%.2f".formatted(f.sum() / f.n()), true);
       }
     }
 
