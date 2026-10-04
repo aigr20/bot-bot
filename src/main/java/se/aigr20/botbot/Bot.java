@@ -9,13 +9,15 @@ import org.slf4j.LoggerFactory;
 
 import se.aigr20.botbot.commands.dota.AccountRegistry;
 import se.aigr20.botbot.commands.dota.DotaCommand;
-import se.aigr20.botbot.commands.dota.heroes.HeroAliases;
+import se.aigr20.botbot.commands.dota.heroes.HeroRepository;
 import se.aigr20.botbot.commands.dota.heroes.HeroSync;
 import se.aigr20.botbot.opendota.OpenDotaClient;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.interactions.commands.Command;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import tools.jackson.databind.ObjectMapper;
 
 public class Bot {
@@ -43,11 +45,11 @@ public class Bot {
     final String guild = System.getenv("GUILD");
 
     final AccountRegistry accountRegistry = new AccountRegistry(datasource);
-    final HeroAliases heroAliases = new HeroAliases(datasource);
+    final HeroRepository heroRepository = new HeroRepository(datasource);
 
     final JDA jda = JDABuilder
             .createDefault(token)
-            .addEventListeners(new DotaCommand(accountRegistry, heroAliases, openDotaClient))
+            .addEventListeners(new DotaCommand(accountRegistry, heroRepository, openDotaClient))
             .build();
     jda.awaitReady();
 
@@ -68,6 +70,7 @@ public class Bot {
       guild
               .updateCommands()
               .addCommands(DotaCommand.specification())
+              .addCommands(Commands.context(Command.Type.USER, "Open Dota 2 profile"))
               .queue(_ -> logger.info("Commands registered to guild {}", guildId),
                      e -> logger.error("Failed to register commands", e));
       return;
@@ -76,6 +79,7 @@ public class Bot {
     jda
             .updateCommands()
             .addCommands(DotaCommand.specification())
+
             .queue(_ -> logger.info("Commands registered globally"),
                    e -> logger.error("Failed to register commands", e));
   }
