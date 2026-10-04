@@ -9,11 +9,15 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import se.aigr20.botbot.opendota.model.Hero;
 import se.aigr20.botbot.opendota.model.Match;
+import se.aigr20.botbot.opendota.model.Peer;
+import se.aigr20.botbot.opendota.model.Player;
+import se.aigr20.botbot.opendota.model.PlayerHero;
 import se.aigr20.botbot.opendota.model.TotalField;
 import se.aigr20.botbot.opendota.model.Winrate;
 
@@ -31,8 +35,24 @@ public class OpenDotaClient {
     this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5L)).build();
   }
 
+  public Player getPlayer(final long accountId) throws OpenDotaException {
+    return get("/players/%d".formatted(accountId), new TypeReference<>() {
+    });
+  }
+
   public List<Hero> getHeroes() throws OpenDotaException {
     return get("/heroes", new TypeReference<>() {
+    });
+  }
+
+  /**
+   * Get the winrate of a player.
+   *
+   * @param accountId Steam account ID of the player.
+   * @return Winrate.
+   */
+  public Winrate getWinrate(final long accountId) throws OpenDotaException {
+    return get("/players/%d/wl".formatted(accountId), new TypeReference<>() {
     });
   }
 
@@ -73,6 +93,39 @@ public class OpenDotaClient {
       return Optional.empty();
     }
     return Optional.of(matches.getFirst());
+  }
+
+  public List<Match> getMatches(final long accountId) throws OpenDotaException {
+    return getMatches(accountId, new MatchField[]{});
+  }
+
+  public List<Match> getMatches(final long accountId,
+                                final MatchField... fields) throws OpenDotaException {
+    if (fields.length == 0) {
+      return get("/players/%d/matches?limit=10&sort=start_time".formatted(accountId),
+                 new TypeReference<>() {
+                 });
+    }
+
+    final StringJoiner paramsJoiner = new StringJoiner("&project=", "&project=", "");
+    for (final MatchField field : fields) {
+      paramsJoiner.add(field.getQueryParam());
+    }
+
+    return get("/players/%d/matches?limit=10&sort=start_time".formatted(accountId) +
+               paramsJoiner.toString(),
+               new TypeReference<>() {
+               });
+  }
+
+  public List<Peer> getPeers(final long accountId) throws OpenDotaException {
+    return get("/players/%d/peers".formatted(accountId), new TypeReference<>() {
+    });
+  }
+
+  public List<PlayerHero> getPlayerHeroes(final long accountId) throws OpenDotaException {
+    return get("/players/%d/heroes".formatted(accountId), new TypeReference<>() {
+    });
   }
 
   private <T> T get(final String path, final TypeReference<T> type) throws OpenDotaException {

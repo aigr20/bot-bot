@@ -1,5 +1,6 @@
 package se.aigr20.botbot.opendota.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -21,4 +22,8 @@ public record Match(@JsonProperty("match_id") long matchId,
                     @JsonProperty("leaver_status") int leaverStatus,
                     @JsonProperty("party_size") Integer partySize,
                     @JsonProperty("hero_variant") Integer heroVariant) {
+  @JsonIgnore
+  public boolean isVictory() {
+    return playerSlot() < 128 && radiantWin();
+  }
 }

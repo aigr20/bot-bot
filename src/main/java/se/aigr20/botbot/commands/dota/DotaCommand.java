@@ -1,14 +1,19 @@
 package se.aigr20.botbot.commands.dota;
 
 import java.sql.SQLException;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import se.aigr20.botbot.commands.dota.heroes.HeroAliases;
+import se.aigr20.botbot.commands.dota.heroes.HeroRepository;
+import se.aigr20.botbot.commands.dota.profile.DotaProfileCache;
+import se.aigr20.botbot.commands.dota.profile.DotaProfileDiscordManager;
 import se.aigr20.botbot.opendota.OpenDotaClient;
 import se.aigr20.botbot.opendota.OpenDotaException;
 import se.aigr20.botbot.opendota.model.Hero;
@@ -16,6 +21,7 @@ import se.aigr20.botbot.opendota.model.Hero;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -29,15 +35,22 @@ public class DotaCommand extends ListenerAdapter {
   private static final long STEAM64_BASE = 76561197960265728L;
 
   private final AccountRegistry accountRegistry;
-  private final HeroAliases heroAliases;
+  private final HeroRepository heroRepository;
   private final OpenDotaClient opendota;
+  private final DotaProfileCache profileCache;
+  private final DotaProfileDiscordManager dotaProfileDiscordManager;
 
   public DotaCommand(final AccountRegistry accountRegistry,
-                     final HeroAliases heroAliases,
+                     final HeroRepository heroAliases,
                      final OpenDotaClient opendota) {
     this.accountRegistry = accountRegistry;
-    this.heroAliases = heroAliases;
+    this.heroRepository = heroAliases;
     this.opendota = opendota;
+    this.profileCache = new DotaProfileCache(opendota,
+                                             Executors.newSingleThreadScheduledExecutor(),
+                                             Clock.system(ZoneId.of("Europe/Stockholm")));
+    this.dotaProfileDiscordManager = new DotaProfileDiscordManager(this.profileCache,
+                                                                   heroRepository);
   }
 
   public static SlashCommandData specification() {
@@ -54,6 +67,11 @@ public class DotaCommand extends ListenerAdapter {
                                     .addOption(OptionType.STRING,
                                                "hero",
                                                "Hero name, or abbreviation",
+                                               true),
+                            new SubcommandData("profile", "View a user's profile")
+                                    .addOption(OptionType.USER,
+                                               "user",
+                                               "The user whose profile should be displayed",
                                                true));
   }
 
@@ -71,11 +89,27 @@ public class DotaCommand extends ListenerAdapter {
                   event.getUser().getId());
     Objects.requireNonNull(subcommand);
 
-    switch (subcommand) {
-      case "connect" -> handleConnectCommand(event);
-      case "stats" -> handleStatsCommand(event);
-      default -> event.reply("Unknown subcommand: " + subcommand).setEphemeral(true).queue();
+    try {
+      switch (subcommand) {
+        case "connect" -> handleConnectCommand(event);
+        case "stats" -> handleStatsCommand(event);
+        case "profile" -> handleProfileCommand(event);
+        default -> event.reply("Unknown subcommand: " + subcommand).setEphemeral(true).queue();
+      }
+    } catch (final Exception e) {
+      logger.error("Unexpected error", e);
+      if (event.isAcknowledged()) {
+        event.getHook().editOriginal("Unexpected error encountered").queue();
+        return;
+      }
+
+      event.reply("Unexpected error encountered").setEphemeral(true).queue();
     }
+  }
+
+  @Override
+  public void onButtonInteraction(final ButtonInteractionEvent event) {
+    dotaProfileDiscordManager.handleButton(event);
   }
 
   private void handleConnectCommand(final SlashCommandInteractionEvent event) {
@@ -119,7 +153,7 @@ public class DotaCommand extends ListenerAdapter {
 
     final Optional<Hero> hero;
     try {
-      hero = heroAliases.findHeroByAlias(heroInput);
+      hero = heroRepository.findHeroByAlias(heroInput);
     } catch (final SQLException e) {
       logger.error("Hero lookup failed: hero_alias={}", heroInput, e);
       event.reply("Internal error, please try again later").setEphemeral(true).queue();
@@ -134,20 +168,9 @@ public class DotaCommand extends ListenerAdapter {
       return;
     }
 
-    final OptionalLong steamAccount;
-    try {
-      steamAccount = accountRegistry.findSteamIdByDiscordId(target.getId());
-    } catch (final SQLException e) {
-      logger.error("Account lookup failed: discord_id={}", target.getId(), e);
-      event.reply("Internal error, please try again later").setEphemeral(true).queue();
-      return;
-    }
-
+    final OptionalLong steamAccount = findSteamAccount(event, target);
     if (steamAccount.isEmpty()) {
-      logger.warn("No user found: account_id={}", target.getId());
-      event
-              .reply("%s has not connected their Steam account".formatted(target.getAsMention()))
-              .queue();
+      // findSteamAccount has already responded to the event
       return;
     }
 
@@ -173,5 +196,38 @@ public class DotaCommand extends ListenerAdapter {
                      e);
       event.getHook().editOriginal("Failed to retrieve data from OpenDota").queue();
     }
+  }
+
+  private void handleProfileCommand(final SlashCommandInteractionEvent event) {
+    final User target = event.getOption("user").getAsUser();
+
+    final OptionalLong steamAccount = findSteamAccount(event, target);
+    if (steamAccount.isEmpty()) {
+      // findSteamAccount has already responded to the event
+      return;
+    }
+
+    dotaProfileDiscordManager.handleProfileCommand(event, steamAccount.getAsLong());
+  }
+
+  private OptionalLong findSteamAccount(final SlashCommandInteractionEvent event, final User user) {
+    final OptionalLong steamAccount;
+    try {
+      steamAccount = accountRegistry.findSteamIdByDiscordId(user.getId());
+    } catch (final SQLException e) {
+      logger.error("Account lookup failed: discord_id={}", user.getId(), e);
+      event.reply("Internal error, please try again later").setEphemeral(true).queue();
+      return OptionalLong.empty();
+    }
+
+    if (steamAccount.isEmpty()) {
+      logger.warn("No user found: account_id={}", user.getId());
+      event
+              .reply("%s has not connected their Steam account".formatted(user.getAsMention()))
+              .queue();
+      return OptionalLong.empty();
+    }
+
+    return steamAccount;
   }
 }
