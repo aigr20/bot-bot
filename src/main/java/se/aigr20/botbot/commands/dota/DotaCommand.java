@@ -6,6 +6,7 @@ import java.time.ZoneId;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,9 @@ public class DotaCommand extends ListenerAdapter {
     this.accountRegistry = accountRegistry;
     this.heroRepository = heroAliases;
     this.opendota = opendota;
-    this.profileCache = new DotaProfileCache(opendota, Clock.system(ZoneId.of("Europe/Stockholm")));
+    this.profileCache = new DotaProfileCache(opendota,
+                                             Executors.newSingleThreadScheduledExecutor(),
+                                             Clock.system(ZoneId.of("Europe/Stockholm")));
     this.dotaProfileDiscordManager = new DotaProfileDiscordManager(this.profileCache,
                                                                    heroRepository);
   }

@@ -6,7 +6,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -20,17 +19,19 @@ import se.aigr20.botbot.opendota.model.PlayerHero;
 import se.aigr20.botbot.opendota.model.Winrate;
 
 public class DotaProfileCache {
-  private static final Duration CACHE_TTL = Duration.ofHours(1L);
-  private static final Duration CLEANUP_INTERVAL = Duration.ofMinutes(10L);
+  static final Duration CACHE_TTL = Duration.ofHours(1L);
+  static final Duration CLEANUP_INTERVAL = Duration.ofMinutes(10L);
 
   private final Map<Long, CacheEntry> cache;
   private final OpenDotaClient openDotaClient;
   private final ScheduledExecutorService scheduler;
   private final Clock clock;
 
-  public DotaProfileCache(final OpenDotaClient openDotaClient, final Clock clock) {
+  public DotaProfileCache(final OpenDotaClient openDotaClient,
+                          final ScheduledExecutorService cleanUpScheduler,
+                          final Clock clock) {
     this.cache = new ConcurrentHashMap<>();
-    this.scheduler = Executors.newSingleThreadScheduledExecutor();
+    this.scheduler = cleanUpScheduler;
     this.openDotaClient = openDotaClient;
     this.clock = clock;
 
@@ -52,7 +53,7 @@ public class DotaProfileCache {
         } catch (final OpenDotaException e) {
           throw new OpenDotaRuntimeException(e);
         }
-        return new CacheEntry(clock.instant().plusSeconds(CACHE_TTL.toSeconds()), data);
+        return new CacheEntry(now.plusSeconds(CACHE_TTL.toSeconds()), data);
       }
       return cached;
     });
